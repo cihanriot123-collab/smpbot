@@ -8,7 +8,7 @@ app.get('/', (req, res) => res.send('Bot aktif!'));
 app.get('/health', (req, res) => res.status(200).json({ status: 'OK' }));
 app.listen(PORT, () => console.log(`HTTP sunucusu ${PORT} portunda başlatıldı.`));
 
-const GUI_PIN_SLOTS = [10, 11, 12, 13]; // Slot indekslerin
+const BOT_PASSWORD = 'Sifren123!'; // Botun şifresi
 
 function createBot() {
   const bot = mineflayer.createBot({
@@ -16,37 +16,36 @@ function createBot() {
     port: 25565,
     username: 'AFK_Bot',
     version: '1.21.11',
-    checkTimeoutInterval: 60 * 1000 // Zaman aşımı süresini artır
+    checkTimeoutInterval: 60 * 1000
   });
 
   bot.on('spawn', () => {
-    console.log('Bot sunucuya katıldı, paketler bekleniyor...');
-  });
+    console.log('Bot sunucuya katıldı. Ekran kapatılıp chat girişi denenecek...');
 
-  // GUI ekranı açıldığında hemen değil, 1 saniye bekleyip tıklatıyoruz (EPIPE önleyici)
-  bot.on('windowOpen', async (window) => {
-    console.log(`GUI Menüsü algılandı: ${window.title}`);
-
-    // Sunucunun soketi kapatmaması için 1 saniye gecikme koyuyoruz
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    try {
-      for (const slotIndex of GUI_PIN_SLOTS) {
-        if (bot.currentWindow) { // Pencere hâlâ açık mı kontrol et
-          await bot.clickWindow(slotIndex, 0, 0);
-          await new Promise((resolve) => setTimeout(resolve, 500));
+    // 1. Oyuna girdikten 1.5 saniye sonra ESC / Cancel niyetine pencereyi kapatır
+    setTimeout(() => {
+      try {
+        if (bot.currentWindow) {
+          bot.closeWindow(bot.currentWindow);
+          console.log('Giriş ekranı kapatıldı (ESC atıldı).');
         }
+      } catch (err) {
+        console.log('Pencere kapatma deneniyor...');
       }
-      console.log('GUI şifresi basıldı!');
-    } catch (err) {
-      console.log('GUI tıklama hatası önlendi:', err.message);
-    }
+    }, 1500);
+
+    // 2. Ekran kapandıktan sonra (3. saniyede) chat komutlarını gönderir
+    setTimeout(() => {
+      bot.chat(`/register ${BOT_PASSWORD} ${BOT_PASSWORD}`);
+      bot.chat(`/login ${BOT_PASSWORD}`);
+      console.log('Chat kayıt/giriş komutları atıldı.');
+    }, 3000);
   });
 
-  // EPIPE hatalarını yakalayıp botun çökmesini önler
+  // Hataları yakala ve botun çökmesini engelle
   bot.on('error', (err) => {
     if (err.code === 'EPIPE') {
-      console.log('Soket bağlantısı sunucu tarafından kapatıldı (EPIPE).');
+      console.log('EPIPE hatası yakalandı.');
     } else {
       console.log('Bot hatası:', err);
     }
