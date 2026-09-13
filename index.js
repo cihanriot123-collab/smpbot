@@ -8,47 +8,40 @@ app.get('/', (req, res) => res.send('Bot aktif!'));
 app.get('/health', (req, res) => res.status(200).json({ status: 'OK' }));
 app.listen(PORT, () => console.log(`HTTP sunucusu ${PORT} portunda başlatıldı.`));
 
-const BOT_PASSWORD = 'Sifren123!'; // Botun şifresi
+const BOT_PASSWORD = 'Sifren123!'; // <<< Botun girmesini istediğin şifre
 
 function createBot() {
   const bot = mineflayer.createBot({
     host: 'agalarsmp2.falixsrv.me',
     port: 25565,
-    username: 'AFK_Bot',
+    username: 'afk_Yiz_gardas',
     version: '1.21.11',
     checkTimeoutInterval: 60 * 1000
   });
 
   bot.on('spawn', () => {
-    console.log('Bot sunucuya katıldı. Ekran kapatılıp chat girişi denenecek...');
+    console.log('Bot sunucuya katıldı. Giriş komutları gönderiliyor...');
 
-    // 1. Oyuna girdikten 1.5 saniye sonra ESC / Cancel niyetine pencereyi kapatır
-    setTimeout(() => {
-      try {
-        if (bot.currentWindow) {
-          bot.closeWindow(bot.currentWindow);
-          console.log('Giriş ekranı kapatıldı (ESC atıldı).');
-        }
-      } catch (err) {
-        console.log('Pencere kapatma deneniyor...');
-      }
-    }, 1500);
-
-    // 2. Ekran kapandıktan sonra (3. saniyede) chat komutlarını gönderir
+    // Sunucu dünyayı yüklesin diye 2.5 saniye bekleyip kayıt/giriş komutunu atar
     setTimeout(() => {
       bot.chat(`/register ${BOT_PASSWORD} ${BOT_PASSWORD}`);
       bot.chat(`/login ${BOT_PASSWORD}`);
-      console.log('Chat kayıt/giriş komutları atıldı.');
-    }, 3000);
+      console.log('Kayıt/Giriş komutları chatten iletildi.');
+    }, 2500);
   });
 
-  // Hataları yakala ve botun çökmesini engelle
-  bot.on('error', (err) => {
-    if (err.code === 'EPIPE') {
-      console.log('EPIPE hatası yakalandı.');
-    } else {
-      console.log('Bot hatası:', err);
+  // Chatte login/register uyarısı çıkarsa otomatik tekrar dener
+  bot.on('messagestr', (message) => {
+    const msg = message.toLowerCase();
+    if (msg.includes('/login') || msg.includes('şifre') || msg.includes('password')) {
+      setTimeout(() => {
+        bot.chat(`/login ${BOT_PASSWORD}`);
+      }, 1000);
     }
+  });
+
+  bot.on('error', (err) => {
+    console.log('Bot hatası:', err.message);
   });
 
   bot.on('end', () => {
