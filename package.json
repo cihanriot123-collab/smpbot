@@ -1,0 +1,13 @@
+{
+  "name": "smpbot",
+  "version": "1.0.0",
+  "description": "7/24 Mineflayer AFK Botu",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "mineflayer": "^4.20.1"
+  }
+}
