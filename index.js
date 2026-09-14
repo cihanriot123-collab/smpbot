@@ -16,35 +16,39 @@ function createBot() {
     port: 25565,
     username: 'AFK_Bot_724',
     version: '1.21.11',
-    checkTimeoutInterval: 60 * 1000
+    checkTimeoutInterval: 90 * 1000
   });
 
-  bot.on('spawn', () => {
-    console.log('Bot sunucuya başarıyla katıldı.');
+  // GrimAC veya korumalara takılmaması için fiziği baştan kapatıyoruz
+  bot.physicsEnabled = false;
 
-    // 1. Ekran / Menü gelirse 1.5 saniye sonra otomatik kapatır (ESC basar)
+  bot.on('spawn', () => {
+    console.log('Bot sunucuya katıldı. Giriş bekleniyor...');
+
+    // 1. Varsa açık pencereyi/GUI'yi kapat
     setTimeout(() => {
       try {
         if (bot.currentWindow) {
           bot.closeWindow(bot.currentWindow);
-          console.log('Açılan menü/GUI kapatıldı (ESC atıldı).');
         }
-      } catch (e) {
-        // Ekran yoksa hatayı yut
-      }
-    }, 1500);
+      } catch (e) {}
+    }, 1000);
 
-    // 2. Menü kapandıktan sonra (3. saniyede) chatten kayıt ve giriş yapar
+    // 2. Chatten giriş yap
     setTimeout(() => {
       bot.chat(`/register ${BOT_PASSWORD} ${BOT_PASSWORD}`);
       bot.chat(`/login ${BOT_PASSWORD}`);
       console.log('Chat kayıt/giriş komutları gönderildi.');
-    }, 3000);
+    }, 2500);
+
+    // 3. Giriş yaptıktan sonra fiziği tekrar aç
+    setTimeout(() => {
+      bot.physicsEnabled = true;
+      console.log('Bot fiziği aktifleştirildi.');
+    }, 5000);
   });
 
-  // Eğer ekrana yeni bir pencere/menü düşerse anında kapat
   bot.on('windowOpen', (window) => {
-    console.log(`Menü açıldı (${window.title}), kapatılıyor...`);
     setTimeout(() => {
       try {
         bot.closeWindow(window);
@@ -53,7 +57,7 @@ function createBot() {
   });
 
   bot.on('error', (err) => {
-    console.log('Bot bağlantı hatası:', err.message);
+    console.log('Bot hatası:', err.message);
   });
 
   bot.on('end', (reason) => {
