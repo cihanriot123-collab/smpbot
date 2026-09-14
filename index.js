@@ -1,5 +1,6 @@
 const express = require('express');
 const mineflayer = require('mineflayer');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -8,7 +9,14 @@ app.get('/', (req, res) => res.send('Bot aktif!'));
 app.get('/health', (req, res) => res.status(200).json({ status: 'OK' }));
 app.listen(PORT, () => console.log(`HTTP sunucusu ${PORT} portunda başlatıldı.`));
 
-const BOT_PASSWORD = 'Sifren123!'; // <<< Botun şifresi
+const BOT_PASSWORD = 'Sifren123!'; // <<< Botun oyundaki şifresi
+const GEMINI_API_KEY = 'BURAYA_GEMINI_API_KEY_YAZ'; // <<< Google AI Studio'dan aldığın API Key
+
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({
+  model: 'gemini-1.5-flash',
+  systemInstruction: 'Sen Minecraft sunucusunda takılan, son derece argo, küfürlü, sokak ağzıyla konuşan, laf sokan ve agresif bir oyuncu botusun. Sana laf atanlara söv, mahalle ağzı kullan. Cevapların Minecraft chatine sığması için 1-2 cümleyi ve 100 karakteri ASLA geçmesin.'
+});
 
 function createBot() {
   const bot = mineflayer.createBot({
@@ -16,50 +24,57 @@ function createBot() {
     port: 25565,
     username: 'AFK_Bot_724',
     version: '1.21.11',
-    checkTimeoutInterval: 90 * 1000
+    checkTimeoutInterval: 120 * 1000,
+    keepAlive: true
   });
 
-  // GrimAC veya korumalara takılmaması için fiziği baştan kapatıyoruz
   bot.physicsEnabled = false;
 
   bot.on('spawn', () => {
-    console.log('Bot sunucuya katıldı. Giriş bekleniyor...');
+    console.log('Bot sunucuya katıldı.');
 
-    // 1. Varsa açık pencereyi/GUI'yi kapat
     setTimeout(() => {
       try {
-        if (bot.currentWindow) {
-          bot.closeWindow(bot.currentWindow);
-        }
+        if (bot.currentWindow) bot.closeWindow(bot.currentWindow);
       } catch (e) {}
-    }, 1000);
+    }, 2000);
 
-    // 2. Chatten giriş yap
     setTimeout(() => {
       bot.chat(`/register ${BOT_PASSWORD} ${BOT_PASSWORD}`);
       bot.chat(`/login ${BOT_PASSWORD}`);
-      console.log('Chat kayıt/giriş komutları gönderildi.');
-    }, 2500);
-
-    // 3. Giriş yaptıktan sonra fiziği tekrar aç
-    setTimeout(() => {
-      bot.physicsEnabled = true;
-      console.log('Bot fiziği aktifleştirildi.');
+      console.log('Chat kayıt/giriş yapıldı.');
     }, 5000);
+  });
+
+  // Chat Dinleme ve AI Cevap Verme
+  bot.on('chat', async (username, message) => {
+    if (username === bot.username) return;
+
+    const msg = message.toLowerCase();
+    
+    // Bota seslenildiğinde veya laf atıldığında yanıt verir
+    if (msg.includes('bot') || msg.includes('afk_bot') || msg.includes('sa') || msg.includes('naber')) {
+      try {
+        const prompt = `${username} sana şunu dedi: "${message}". Buna küfürlü ve argo bir cevap ver.`;
+        const result = await model.generateContent(prompt);
+        const response = result.response.text().trim().replace(/[\r\n]+/g, ' ');
+
+        // Chat sınırı için kısa tutup gönderir
+        bot.chat(response.substring(0, 150));
+      } catch (err) {
+        console.log('AI Hatası:', err.message);
+        bot.chat('Ne diyon amk kafa açma.');
+      }
+    }
   });
 
   bot.on('windowOpen', (window) => {
     setTimeout(() => {
-      try {
-        bot.closeWindow(window);
-      } catch (e) {}
+      try { bot.closeWindow(window); } catch (e) {}
     }, 500);
   });
 
-  bot.on('error', (err) => {
-    console.log('Bot hatası:', err.message);
-  });
-
+  bot.on('error', (err) => console.log('Bot hatası:', err.message));
   bot.on('end', (reason) => {
     console.log(`Bağlantı koptu (${reason}), 10 saniye sonra tekrar bağlanılıyor...`);
     setTimeout(createBot, 10000);
