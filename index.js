@@ -10,7 +10,7 @@ app.get('/health', (req, res) => res.status(200).json({ status: 'OK' }));
 app.listen(PORT, () => console.log(`HTTP sunucusu ${PORT} portunda başlatıldı.`));
 
 const BOT_PASSWORD = 'Sifren123!'; // <<< Botun oyundaki şifresi
-const GEMINI_API_KEY = 'BURAYA_GEMINI_API_KEY_YAZ'; // <<< Google AI Studio'dan aldığın API Key
+const GEMINI_API_KEY = 'AQ.Ab8RN6JwhkpBQam82qg9eMTrJnlbWxE9zJh451ymuPzd4f-4Lw'; // <<< Google AI Studio'dan aldığın API Key
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
